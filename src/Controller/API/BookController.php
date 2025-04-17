@@ -11,12 +11,22 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class BookController extends AbstractController
 {
-    #[Route('/api/v1/books', name: 'app_api_book', methods: ['GET'])]
+    #[Route('/api/v1/books', name: 'app_api_book_index', methods: ['GET'])]
     public function index(BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
     {
         $bookList = $bookRepository->findAll();
         $jsonBookList = $serializer->serialize($bookList, 'json');
 
         return new JsonResponse($jsonBookList, Response::HTTP_OK, [],true);
+    }
+    #[Route('/api/v1/books/{id}', name: 'app_api_book_read', methods: ['GET'])]
+    public function read(int $id, BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
+    {
+        $book = $bookRepository->find($id);
+        if ($book) {
+            $jsonBook = $serializer->serialize($book, 'json');
+            return new JsonResponse($jsonBook, Response::HTTP_OK, [], true);
+        }
+        return new JsonResponse(['error' => 'Book not found'], Response::HTTP_NOT_FOUND);
     }
 }
