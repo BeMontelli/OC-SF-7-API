@@ -16,7 +16,7 @@ final class BookController extends AbstractController
     public function index(BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
     {
         $bookList = $bookRepository->findAll();
-        $jsonBookList = $serializer->serialize($bookList, 'json');
+        $jsonBookList = $serializer->serialize($bookList, 'json', ['groups' => ['book:index']]);
 
         return new JsonResponse($jsonBookList, Response::HTTP_OK, [],true);
     }
@@ -24,7 +24,7 @@ final class BookController extends AbstractController
     public function read(Book $book, BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
     {
         if ($book) {
-            $jsonBook = $serializer->serialize($book, 'json');
+            $jsonBook = $serializer->serialize($book, 'json', ['groups' => ['book:read']]);
             return new JsonResponse($jsonBook, Response::HTTP_OK, [], true);
         }
         return new JsonResponse(['error' => 'Book not found'], Response::HTTP_NOT_FOUND);
