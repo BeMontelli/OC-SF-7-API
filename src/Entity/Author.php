@@ -14,21 +14,22 @@ class Author
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['book:index','book:read'])]
+    #[Groups(['author:index','author:read','book:index','book:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['book:index','book:read'])]
+    #[Groups(['author:index','author:read','book:index','book:read'])]
     private ?string $firstname = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['book:index','book:read'])]
+    #[Groups(['author:index','author:read','book:index','book:read'])]
     private ?string $lastname = null;
 
     /**
      * @var Collection<int, Book>
      */
-    #[ORM\OneToMany(targetEntity: Book::class, mappedBy: 'author', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Book::class, mappedBy: 'author', orphanRemoval: true, cascade: ['persist'])]
+    #[Groups(['author:index','author:read'])]
     private Collection $books;
 
     public function __construct()

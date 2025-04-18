@@ -36,7 +36,7 @@ final class BookController extends AbstractController
     }
 
     #[Route('/api/v1/books', name: 'app_api_book_create', methods: ['POST'])]   
-    public function createBook(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, AuthorRepository $authorRepository): JsonResponse 
+    public function create(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, AuthorRepository $authorRepository): JsonResponse 
     {
         $book = $serializer->deserialize($request->getContent(), Book::class, 'json');
 
@@ -51,7 +51,7 @@ final class BookController extends AbstractController
         $em->persist($book);
         $em->flush();
 
-        $jsonBook = $serializer->serialize($book, 'json', ['groups' => 'getBooks']);
+        $jsonBook = $serializer->serialize($book, 'json', ['groups' => 'book:read']);
 
         $location = $urlGenerator->generate('app_api_book_read', ['id' => $book->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
 
@@ -59,7 +59,7 @@ final class BookController extends AbstractController
     }
 
     #[Route('/api/v1/books/{id}', name:"app_api_book_update", methods:['PUT'])]
-    public function updateBook(Request $request, SerializerInterface $serializer, Book $currentBook, EntityManagerInterface $em, AuthorRepository $authorRepository): JsonResponse 
+    public function update(Request $request, SerializerInterface $serializer, Book $currentBook, EntityManagerInterface $em, AuthorRepository $authorRepository): JsonResponse 
     {
         $updatedBook = $serializer->deserialize($request->getContent(), 
                 Book::class, 
@@ -77,7 +77,7 @@ final class BookController extends AbstractController
    }
 
     #[Route('/api/v1/books/{id}', name: 'app_api_book_delete', methods: ['DELETE'])]
-    public function deleteBook(Book $book, EntityManagerInterface $em): JsonResponse 
+    public function delete(Book $book, EntityManagerInterface $em): JsonResponse 
     {
         $em->remove($book);
         $em->flush();
