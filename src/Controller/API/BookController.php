@@ -9,6 +9,11 @@ use App\Repository\BookRepository;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use App\Entity\Book;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use App\Repository\AuthorRepository;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 final class BookController extends AbstractController
 {
@@ -28,5 +33,54 @@ final class BookController extends AbstractController
             return new JsonResponse($jsonBook, Response::HTTP_OK, [], true);
         }
         return new JsonResponse(['error' => 'Book not found'], Response::HTTP_NOT_FOUND);
+    }
+
+    #[Route('/api/v1/books', name: 'app_api_book_create', methods: ['POST'])]   
+    public function createBook(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, AuthorRepository $authorRepository): JsonResponse 
+    {
+        $book = $serializer->deserialize($request->getContent(), Book::class, 'json');
+
+        $content = $request->toArray();
+
+        $idAuthor = $content['author'] ?? -1;
+        if ($idAuthor == -1) {
+            return new JsonResponse(['error' => 'Author not found'], Response::HTTP_NOT_FOUND);
+        }
+        $book->setAuthor($authorRepository->find($idAuthor));
+     
+        $em->persist($book);
+        $em->flush();
+
+        $jsonBook = $serializer->serialize($book, 'json', ['groups' => 'getBooks']);
+
+        $location = $urlGenerator->generate('app_api_book_read', ['id' => $book->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+
+        return new JsonResponse($jsonBook, Response::HTTP_CREATED, ["Location" => $location], true);
+    }
+
+    #[Route('/api/v1/books/{id}', name:"app_api_book_update", methods:['PUT'])]
+    public function updateBook(Request $request, SerializerInterface $serializer, Book $currentBook, EntityManagerInterface $em, AuthorRepository $authorRepository): JsonResponse 
+    {
+        $updatedBook = $serializer->deserialize($request->getContent(), 
+                Book::class, 
+                'json', 
+                [AbstractNormalizer::OBJECT_TO_POPULATE => $currentBook]);
+        $content = $request->toArray();
+        $idAuthor = $content['author'] ?? -1;
+        if ($idAuthor !== -1) {
+            $updatedBook->setAuthor($authorRepository->find($idAuthor));
+        }
+        
+        $em->persist($updatedBook);
+        $em->flush();
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+   }
+
+    #[Route('/api/v1/books/{id}', name: 'app_api_book_delete', methods: ['DELETE'])]
+    public function deleteBook(Book $book, EntityManagerInterface $em): JsonResponse 
+    {
+        $em->remove($book);
+        $em->flush();
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 }
