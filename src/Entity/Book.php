@@ -20,6 +20,10 @@ class Book
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $coverText = null;
 
+    #[ORM\ManyToOne(inversedBy: 'books')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Author $author = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -45,6 +49,18 @@ class Book
     public function setCoverText(?string $coverText): static
     {
         $this->coverText = $coverText;
+
+        return $this;
+    }
+
+    public function getAuthor(): ?Author
+    {
+        return $this->author;
+    }
+
+    public function setAuthor(?Author $author): static
+    {
+        $this->author = $author;
 
         return $this;
     }
