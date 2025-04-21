@@ -17,14 +17,24 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 final class AuthorController extends AbstractController
 {
     #[Route('/api/v1/authors', name: 'app_api_author_index', methods: ['GET'])]
     #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
-    public function index(AuthorRepository $authorRepository, SerializerInterface $serializer): JsonResponse
+    public function index(AuthorRepository $authorRepository, SerializerInterface $serializer, Request $request, TagAwareCacheInterface $cachePool): JsonResponse
     {
-        $authorList = $authorRepository->findAll();
+        $page = $request->get('page', 1);
+        $limit = $request->get('limit', 3);
+        
+        $idCache = "getAllAuthors-" . $page . "-" . $limit;
+        $authorList = $cachePool->get($idCache, function (ItemInterface $item) use ($authorRepository, $page, $limit) {
+            $item->tag("authorsCache")->expiresAfter(3600);
+            return $authorRepository->findAllWithPagination($page, $limit);
+        });
+
         $jsonAuthorList = $serializer->serialize($authorList, 'json', ['groups' => ['author:index']]);
 
         return new JsonResponse($jsonAuthorList, Response::HTTP_OK, [],true);
