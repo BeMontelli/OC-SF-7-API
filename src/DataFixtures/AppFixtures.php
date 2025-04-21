@@ -5,13 +5,32 @@ namespace App\DataFixtures;
 
 use App\Entity\Book;
 use App\Entity\Author;
+use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture
 {
+
+    public function __construct(private UserPasswordHasherInterface $userPasswordHasher)
+    {
+        $this->userPasswordHasher = $userPasswordHasher;
+    }
     public function load(ObjectManager $manager): void
     {
+        $user = new User();
+        $user->setEmail('user@project.dev');
+        $user->setRoles(['ROLE_USER']);
+        $user->setPassword($this->userPasswordHasher->hashPassword($user, 'password'));
+        $manager->persist($user);
+
+        $user = new User();
+        $user->setEmail('admin@project.dev');
+        $user->setRoles(['ROLE_ADMIN']);
+        $user->setPassword($this->userPasswordHasher->hashPassword($user, 'password'));
+        $manager->persist($user);
+
         $authors = [];
         for ($i = 0; $i < 5; $i++) {
             $author = new Author;
