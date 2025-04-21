@@ -30,7 +30,7 @@ final class BookController extends AbstractController
 
         $idCache = "getAllBooks-" . $page . "-" . $limit;
         $bookList = $cachePool->get($idCache, function (ItemInterface $item) use ($bookRepository, $page, $limit) {
-            $item->tag("booksCache");
+            $item->tag("booksCache")->expiresAfter(3600);
             return $bookRepository->findAllWithPagination($page, $limit);
         });
         
@@ -114,8 +114,9 @@ final class BookController extends AbstractController
 
     #[Route('/api/v1/books/{id}', name: 'app_api_book_delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
-    public function delete(Book $book, EntityManagerInterface $em): JsonResponse 
+    public function delete(Book $book, EntityManagerInterface $em, TagAwareCacheInterface $cachePool): JsonResponse 
     {
+        $cachePool->invalidateTags(['booksCache']);
         $em->remove($book);
         $em->flush();
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
