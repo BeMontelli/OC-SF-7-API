@@ -6,6 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Repository\BookRepository;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use App\Entity\Book;
@@ -19,6 +20,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 final class BookController extends AbstractController
 {
     #[Route('/api/v1/books', name: 'app_api_book_index', methods: ['GET'])]
+    #[IsGranted('ROLE_USER', message: 'Access denied')]
     public function index(BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
     {
         $bookList = $bookRepository->findAll();
@@ -26,7 +28,9 @@ final class BookController extends AbstractController
 
         return new JsonResponse($jsonBookList, Response::HTTP_OK, [],true);
     }
+
     #[Route('/api/v1/books/{id}', name: 'app_api_book_read', methods: ['GET'])]
+    #[IsGranted('ROLE_USER', message: 'Access denied')]
     public function read(Book $book, BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
     {
         if ($book) {
@@ -36,7 +40,8 @@ final class BookController extends AbstractController
         return new JsonResponse(['error' => 'Book not found'], Response::HTTP_NOT_FOUND);
     }
 
-    #[Route('/api/v1/books', name: 'app_api_book_create', methods: ['POST'])]   
+    #[Route('/api/v1/books', name: 'app_api_book_create', methods: ['POST'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
     public function create(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse 
     {
         $book = $serializer->deserialize($request->getContent(), Book::class, 'json');
@@ -69,6 +74,7 @@ final class BookController extends AbstractController
     }
 
     #[Route('/api/v1/books/{id}', name:"app_api_book_update", methods:['PUT'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
     public function update(Request $request, SerializerInterface $serializer, Book $currentBook, EntityManagerInterface $em, AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse 
     {
         $updatedBook = $serializer->deserialize($request->getContent(), 
@@ -97,6 +103,7 @@ final class BookController extends AbstractController
    }
 
     #[Route('/api/v1/books/{id}', name: 'app_api_book_delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
     public function delete(Book $book, EntityManagerInterface $em): JsonResponse 
     {
         $em->remove($book);

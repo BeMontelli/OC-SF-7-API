@@ -9,6 +9,7 @@ use App\Entity\Book;
 use App\Entity\Author;
 use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,6 +21,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 final class AuthorController extends AbstractController
 {
     #[Route('/api/v1/authors', name: 'app_api_author_index', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
     public function index(AuthorRepository $authorRepository, SerializerInterface $serializer): JsonResponse
     {
         $authorList = $authorRepository->findAll();
@@ -27,7 +29,9 @@ final class AuthorController extends AbstractController
 
         return new JsonResponse($jsonAuthorList, Response::HTTP_OK, [],true);
     }
+
     #[Route('/api/v1/authors/{id}', name: 'app_api_author_read', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
     public function read(Author $author, AuthorRepository $authorRepository, SerializerInterface $serializer): JsonResponse
     {
         if ($author) {
@@ -38,6 +42,7 @@ final class AuthorController extends AbstractController
     }
 
     #[Route('/api/v1/authors', name: 'app_api_author_create', methods: ['POST'])]   
+    #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
     public function create(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, BookRepository $bookRepository, ValidatorInterface $validator): JsonResponse 
     {
         $author = $serializer->deserialize($request->getContent(), Author::class, 'json');
@@ -79,6 +84,7 @@ final class AuthorController extends AbstractController
     }
 
     #[Route('/api/v1/authors/{id}', name:"app_api_author_update", methods:['PUT'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
     public function update(Request $request, SerializerInterface $serializer, Author $currentAuthor, EntityManagerInterface $em, BookRepository $bookRepository, ValidatorInterface $validator): JsonResponse 
     {
         $updatedAuthor = $serializer->deserialize($request->getContent(), 
@@ -118,6 +124,7 @@ final class AuthorController extends AbstractController
    }
 
     #[Route('/api/v1/authors/{id}', name: 'app_api_author_delete', methods: ['DELETE'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
     public function delete(Author $author, EntityManagerInterface $em): JsonResponse 
     {
         $em->remove($author);
