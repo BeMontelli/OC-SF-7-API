@@ -16,17 +16,24 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use App\Repository\AuthorRepository;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 final class BookController extends AbstractController
 {
     #[Route('/api/v1/books', name: 'app_api_book_index', methods: ['GET'])]
     #[IsGranted('ROLE_USER', message: 'Access denied')]
-    public function index(BookRepository $bookRepository, SerializerInterface $serializer, Request $request): JsonResponse
+    public function index(BookRepository $bookRepository, SerializerInterface $serializer, Request $request, TagAwareCacheInterface $cachePool): JsonResponse
     {
         $page = $request->get('page', 1);
         $limit = $request->get('limit', 3);
+
+        $idCache = "getAllBooks-" . $page . "-" . $limit;
+        $bookList = $cachePool->get($idCache, function (ItemInterface $item) use ($bookRepository, $page, $limit) {
+            $item->tag("booksCache");
+            return $bookRepository->findAllWithPagination($page, $limit);
+        });
         
-        $bookList = $bookRepository->findAllWithPagination($page, $limit);
         $jsonBookList = $serializer->serialize($bookList, 'json', ['groups' => ['book:index']]);
 
         return new JsonResponse($jsonBookList, Response::HTTP_OK, [],true);
