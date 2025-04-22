@@ -10,7 +10,8 @@ use App\Entity\Author;
 use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Serializer\SerializerInterface;
+use JMS\Serializer\SerializationContext;
+use JMS\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -35,7 +36,8 @@ final class AuthorController extends AbstractController
             return $authorRepository->findAllWithPagination($page, $limit);
         });
 
-        $jsonAuthorList = $serializer->serialize($authorList, 'json', ['groups' => ['author:index']]);
+        $context = SerializationContext::create()->setGroups(['author:index']);
+        $jsonAuthorList = $serializer->serialize($authorList, 'json', $context);
 
         return new JsonResponse($jsonAuthorList, Response::HTTP_OK, [],true);
     }
@@ -45,7 +47,8 @@ final class AuthorController extends AbstractController
     public function read(Author $author, AuthorRepository $authorRepository, SerializerInterface $serializer): JsonResponse
     {
         if ($author) {
-            $jsonAuthor = $serializer->serialize($author, 'json', ['groups' => ['author:read']]);
+            $context = SerializationContext::create()->setGroups(['author:read']);
+            $jsonAuthor = $serializer->serialize($author, 'json', $context);
             return new JsonResponse($jsonAuthor, Response::HTTP_OK, [], true);
         }
         return new JsonResponse(['error' => 'Book not found'], Response::HTTP_NOT_FOUND);
@@ -86,7 +89,8 @@ final class AuthorController extends AbstractController
         $em->persist($author);
         $em->flush();
 
-        $jsonAuthor = $serializer->serialize($author, 'json', ['groups' => 'author:read']);
+        $context = SerializationContext::create()->setGroups(['author:read']);
+        $jsonAuthor = $serializer->serialize($author, 'json', $context);
 
         $location = $urlGenerator->generate('app_api_author_read', ['id' => $author->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
 

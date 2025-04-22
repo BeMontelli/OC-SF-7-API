@@ -7,7 +7,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Repository\BookRepository;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Serializer\SerializerInterface;
+use JMS\Serializer\SerializationContext;
+use JMS\Serializer\SerializerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use App\Entity\Book;
 use Doctrine\ORM\EntityManagerInterface;
@@ -34,7 +35,8 @@ final class BookController extends AbstractController
             return $bookRepository->findAllWithPagination($page, $limit);
         });
         
-        $jsonBookList = $serializer->serialize($bookList, 'json', ['groups' => ['book:index']]);
+        $context = SerializationContext::create()->setGroups(['book:index']);
+        $jsonBookList = $serializer->serialize($bookList, 'json', $context);
 
         return new JsonResponse($jsonBookList, Response::HTTP_OK, [],true);
     }
@@ -44,7 +46,8 @@ final class BookController extends AbstractController
     public function read(Book $book, BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
     {
         if ($book) {
-            $jsonBook = $serializer->serialize($book, 'json', ['groups' => ['book:read']]);
+            $context = SerializationContext::create()->setGroups(['book:read']);
+            $jsonBook = $serializer->serialize($book, 'json', $context);
             return new JsonResponse($jsonBook, Response::HTTP_OK, [], true);
         }
         return new JsonResponse(['error' => 'Book not found'], Response::HTTP_NOT_FOUND);
@@ -76,7 +79,8 @@ final class BookController extends AbstractController
         $em->persist($book);
         $em->flush();
 
-        $jsonBook = $serializer->serialize($book, 'json', ['groups' => 'book:read']);
+        $context = SerializationContext::create()->setGroups(['book:read']);
+        $jsonBook = $serializer->serialize($book, 'json', $context);
 
         $location = $urlGenerator->generate('app_api_book_read', ['id' => $book->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
 
