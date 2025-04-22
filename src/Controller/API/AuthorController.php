@@ -56,7 +56,7 @@ final class AuthorController extends AbstractController
 
     #[Route('/api/v1/authors', name: 'app_api_author_create', methods: ['POST'])]   
     #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
-    public function create(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, BookRepository $bookRepository, ValidatorInterface $validator): JsonResponse 
+    public function create(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, BookRepository $bookRepository, ValidatorInterface $validator, TagAwareCacheInterface $cachePool): JsonResponse 
     {
         $author = $serializer->deserialize($request->getContent(), Author::class, 'json');
 
@@ -86,6 +86,7 @@ final class AuthorController extends AbstractController
             }
         }
      
+        $cachePool->invalidateTags(['authorsCache']);
         $em->persist($author);
         $em->flush();
 
@@ -99,7 +100,7 @@ final class AuthorController extends AbstractController
 
     #[Route('/api/v1/authors/{id}', name:"app_api_author_update", methods:['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
-    public function update(Request $request, SerializerInterface $serializer, Author $currentAuthor, EntityManagerInterface $em, BookRepository $bookRepository, ValidatorInterface $validator): JsonResponse 
+    public function update(Request $request, SerializerInterface $serializer, Author $currentAuthor, EntityManagerInterface $em, BookRepository $bookRepository, ValidatorInterface $validator, TagAwareCacheInterface $cachePool): JsonResponse 
     {
         $content = $request->toArray();
 
@@ -133,6 +134,7 @@ final class AuthorController extends AbstractController
             }
         }
         
+        $cachePool->invalidateTags(['authorsCache']);
         $em->persist($currentAuthor);
         $em->flush();
 
@@ -141,8 +143,9 @@ final class AuthorController extends AbstractController
 
     #[Route('/api/v1/authors/{id}', name: 'app_api_author_delete', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
-    public function delete(Author $author, EntityManagerInterface $em): JsonResponse 
+    public function delete(Author $author, EntityManagerInterface $em, TagAwareCacheInterface $cachePool): JsonResponse 
     {
+        $cachePool->invalidateTags(['authorsCache']);
         $em->remove($author);
         $em->flush();
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);

@@ -56,7 +56,7 @@ final class BookController extends AbstractController
 
     #[Route('/api/v1/books', name: 'app_api_book_create', methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
-    public function create(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse 
+    public function create(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, UrlGeneratorInterface $urlGenerator, AuthorRepository $authorRepository, ValidatorInterface $validator, TagAwareCacheInterface $cachePool): JsonResponse 
     {
         $book = $serializer->deserialize($request->getContent(), Book::class, 'json');
 
@@ -77,6 +77,7 @@ final class BookController extends AbstractController
         }
         $book->setAuthor($authorRepository->find($idAuthor));
      
+        $cachePool->invalidateTags(['booksCache']);
         $em->persist($book);
         $em->flush();
 
@@ -90,7 +91,7 @@ final class BookController extends AbstractController
 
     #[Route('/api/v1/books/{id}', name:"app_api_book_update", methods:['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
-    public function update(Request $request, SerializerInterface $serializer, Book $currentBook, EntityManagerInterface $em, AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse 
+    public function update(Request $request, SerializerInterface $serializer, Book $currentBook, EntityManagerInterface $em, AuthorRepository $authorRepository, ValidatorInterface $validator, TagAwareCacheInterface $cachePool): JsonResponse 
     {
         $content = $request->toArray();
 
@@ -119,6 +120,7 @@ final class BookController extends AbstractController
             $currentBook->setAuthor($author);
         }
         
+        $cachePool->invalidateTags(['booksCache']);
         $em->persist($currentBook);
         $em->flush();
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
