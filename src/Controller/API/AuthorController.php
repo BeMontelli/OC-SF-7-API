@@ -101,12 +101,15 @@ final class AuthorController extends AbstractController
     #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
     public function update(Request $request, SerializerInterface $serializer, Author $currentAuthor, EntityManagerInterface $em, BookRepository $bookRepository, ValidatorInterface $validator): JsonResponse 
     {
-        $updatedAuthor = $serializer->deserialize($request->getContent(), 
-        Author::class, 
-                'json', 
-                [AbstractNormalizer::OBJECT_TO_POPULATE => $currentAuthor]);
+        $content = $request->toArray();
 
-        $errors = $validator->validate($updatedAuthor);
+        $firstname = $content['firstname'] ?? null;
+        if ($firstname) $currentAuthor->setFirstname($firstname);
+
+        $lastname = $content['lastname'] ?? null;
+        if ($lastname) $currentAuthor->setLastname($lastname);
+
+        $errors = $validator->validate($currentAuthor);
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
@@ -115,23 +118,22 @@ final class AuthorController extends AbstractController
             return new JsonResponse($serializer->serialize($errorMessages, 'json'), Response::HTTP_BAD_REQUEST, [], true);
         }
                 
-        $content = $request->toArray();
         $idBooks = $content['books'] ?? [];
 
-        foreach ($updatedAuthor->getBooks() as $book) {
-            $updatedAuthor->removeBook($book);
+        foreach ($currentAuthor->getBooks() as $book) {
+            $currentAuthor->removeBook($book);
         }
 
         foreach ($idBooks as $idBook) {
             $book = $bookRepository->find($idBook);
             if ($book) {
-                $updatedAuthor->addBook($book);
+                $currentAuthor->addBook($book);
             } else {
                 throw new \Exception("Book with ID $idBook not found");
             }
         }
         
-        $em->persist($updatedAuthor);
+        $em->persist($currentAuthor);
         $em->flush();
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);

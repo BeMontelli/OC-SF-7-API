@@ -9,6 +9,7 @@ use App\Repository\BookRepository;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use JMS\Serializer\SerializationContext;
 use JMS\Serializer\SerializerInterface;
+use JMS\Serializer\DeserializationContext;
 use Symfony\Component\HttpFoundation\Response;
 use App\Entity\Book;
 use Doctrine\ORM\EntityManagerInterface;
@@ -91,12 +92,16 @@ final class BookController extends AbstractController
     #[IsGranted('ROLE_ADMIN', message: 'Access denied')]
     public function update(Request $request, SerializerInterface $serializer, Book $currentBook, EntityManagerInterface $em, AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse 
     {
-        $updatedBook = $serializer->deserialize($request->getContent(), 
-                Book::class, 
-                'json', 
-                [AbstractNormalizer::OBJECT_TO_POPULATE => $currentBook]);
+        $content = $request->toArray();
 
-        $errors = $validator->validate($updatedBook);
+        $title = $content['title'] ?? null;
+        if ($title) $currentBook->setTitle($title);
+
+        $coverText = $content['coverText'] ?? null;
+        if ($coverText) $currentBook->setCoverText($coverText);
+        
+        $errors = $validator->validate($currentBook);
+        
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
@@ -105,13 +110,16 @@ final class BookController extends AbstractController
             return new JsonResponse($serializer->serialize($errorMessages, 'json'), Response::HTTP_BAD_REQUEST, [], true);
         }
 
-        $content = $request->toArray();
-        $idAuthor = $content['author'] ?? -1;
-        if ($idAuthor !== -1) {
-            $updatedBook->setAuthor($authorRepository->find($idAuthor));
+        $idAuthor = $content['author'] ?? null;
+        if ($idAuthor) {
+            $author = $authorRepository->find($idAuthor);
+            if (!$author) {
+                return new JsonResponse(['message' => 'Author not found'], Response::HTTP_BAD_REQUEST);
+            }
+            $currentBook->setAuthor($author);
         }
         
-        $em->persist($updatedBook);
+        $em->persist($currentBook);
         $em->flush();
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
    }
